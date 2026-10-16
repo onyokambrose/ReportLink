@@ -1,0 +1,209 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}{{ report.id }} - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard:report_list' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Reports</a>
+    <h2>{{ report.title }}</h2>
+    <p><span class="mono">{{ report.id }}</span> &middot; {{ report.category }} &rarr; {{ report.subcategory }}</p>
+  </div>
+  <div style="text-align:right">
+    <span class="badge badge-{{ report.status }}">{{ report.status }}</span>
+    <span class="prio prio-{{ report.priority|lower }}">{{ report.priority }}</span>
+  </div>
+</div>
+
+<div class="action-bar">
+  <div class="current-status">
+    Current status: <strong>{{ report.status }}</strong>
+    &middot; Last updated {{ report.updated_at|date:"d M Y H:i" }}
+  </div>
+
+  {% if report.status != 'assigned' %}
+  <form method="post" action="{% url 'dashboard:report_action' report.id 'approve' %}" style="display:inline">
+    {% csrf_token %}
+    <button type="submit" class="btn-approve"><i class="fa-solid fa-check"></i> Approve</button>
+  </form>
+  {% endif %}
+
+  {% if report.status != 'inProgress' %}
+  <form method="post" action="{% url 'dashboard:report_action' report.id 'progress' %}" style="display:inline">
+    {% csrf_token %}
+    <button type="submit" class="btn-progress"><i class="fa-solid fa-spinner"></i> Start Progress</button>
+  </form>
+  {% endif %}
+
+  {% if report.status != 'resolved' %}
+  <form method="post" action="{% url 'dashboard:report_action' report.id 'resolve' %}" style="display:inline"
+        onsubmit="return confirm('Mark this report as resolved?');">
+    {% csrf_token %}
+    <button type="submit" class="btn-resolve"><i class="fa-solid fa-circle-check"></i> Resolve</button>
+  </form>
+  {% endif %}
+
+  {% if report.status != 'rejected' %}
+  <form method="post" action="{% url 'dashboard:report_action' report.id 'reject' %}" style="display:inline"
+        onsubmit="return confirm('Reject this report?');">
+    {% csrf_token %}
+    <button type="submit" class="btn-reject"><i class="fa-solid fa-xmark"></i> Reject</button>
+  </form>
+  {% endif %}
+
+  {% if report.status == 'resolved' or report.status == 'rejected' %}
+  <form method="post" action="{% url 'dashboard:report_action' report.id 'reopen' %}" style="display:inline">
+    {% csrf_token %}
+    <button type="submit" class="btn-reopen"><i class="fa-solid fa-rotate-left"></i> Reopen</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="detail-grid">
+  <div>
+
+    <div class="card">
+      <h3><i class="fa-solid fa-circle-info"></i> Incident Details</h3>
+      <dl class="detail-list">
+        <dt>Report Type</dt><dd>{{ report.report_type }}</dd>
+        <dt>Category</dt><dd>{{ report.category }} / {{ report.subcategory }}</dd>
+        <dt>Priority</dt><dd><span class="prio prio-{{ report.priority|lower }}">{{ report.priority }}</span></dd>
+        <dt>Status</dt><dd><span class="badge badge-{{ report.status }}">{{ report.status }}</span></dd>
+        <dt>Submitted</dt><dd>{{ report.created_at|date:"d M Y, H:i" }}</dd>
+        <dt>Updated</dt><dd>{{ report.updated_at|date:"d M Y, H:i" }}</dd>
+        <dt>Contact on report</dt><dd>{{ report.contact|default:"—" }}</dd>
+      </dl>
+      <div style="margin-top:16px">
+        <dt style="font-size:12px;color:var(--ink-muted);font-weight:600;margin-bottom:6px">Description</dt>
+        <p style="font-size:13px;line-height:1.6">{{ report.description|linebreaksbr }}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><i class="fa-solid fa-location-dot"></i> Location</h3>
+      <dl class="detail-list">
+        <dt>Description</dt><dd>{{ report.location_description|default:"—" }}</dd>
+        <dt>Area</dt><dd>{{ report.manual_area|default:"—" }}</dd>
+        <dt>Town</dt><dd>{{ report.manual_town|default:"—" }}</dd>
+        <dt>Parish</dt><dd>{{ report.manual_parish|default:"—" }}</dd>
+        <dt>District</dt><dd>{{ report.manual_district|default:"—" }}</dd>
+        <dt>Landmark</dt><dd>{{ report.manual_landmark|default:"—" }}</dd>
+        <dt>Directions</dt><dd>{{ report.manual_directions|default:"—" }}</dd>
+        <dt>Coordinates</dt>
+        <dd>
+          {% if report.latitude and report.longitude %}
+            {{ report.latitude|floatformat:5 }}, {{ report.longitude|floatformat:5 }}
+          {% else %}—{% endif %}
+        </dd>
+      </dl>
+
+      {% if report.latitude and report.longitude %}
+      <div style="margin-top:16px">
+        <iframe class="map-embed"
+          src="https://www.openstreetmap.org/export/embed.html?bbox={{ report.longitude|floatformat:5 }}%2C{{ report.latitude|floatformat:5 }}%2C{{ report.longitude|floatformat:5 }}%2C{{ report.latitude|floatformat:5 }}&layer=mapnik&marker={{ report.latitude|floatformat:5 }}%2C{{ report.longitude|floatformat:5 }}"
+          loading="lazy"
+          style="border:0">
+        </iframe>
+        <a href="https://www.google.com/maps?q={{ report.latitude }},{{ report.longitude }}"
+           target="_blank" class="btn-secondary full" style="margin-top:10px">
+          <i class="fa-solid fa-map-location-dot"></i> Open in Google Maps
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if dynamic %}
+    <div class="card">
+      <h3><i class="fa-solid fa-clipboard-question"></i> Additional Information</h3>
+      <div class="fields-grid">
+        {% for f in dynamic %}
+        <div class="field-box">
+          <div class="field-key">{{ f.key }}</div>
+          <div class="field-val">{{ f.value|default:"—" }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if attachments %}
+    <div class="card">
+      <h3><i class="fa-solid fa-paperclip"></i> Attachments ({{ attachments|length }})</h3>
+      <ul class="attachment-list">
+        {% for a in attachments %}
+        <li>
+          <i class="fa-solid fa-file"></i>
+          <span style="flex:1">{{ a.name }}</span>
+          <span class="mono">{{ a.path }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      <p class="muted" style="margin-top:8px">
+        <i class="fa-solid fa-info-circle"></i> Attachments are stored on the reporter's device. To view them, ask the reporter to send them directly.
+      </p>
+    </div>
+    {% endif %}
+
+  </div>
+
+  <div>
+
+    {% if reporter %}
+    <div class="card">
+      <h3><i class="fa-solid fa-user"></i> Reporter</h3>
+      <div class="reporter-block">
+        <div class="avatar large">{{ reporter.full_name|first|upper }}</div>
+        <div>
+          <strong>{{ reporter.full_name }}</strong>
+          <div class="muted">{{ reporter.email }}</div>
+          <div class="muted">{{ reporter.phone }}</div>
+        </div>
+      </div>
+
+      <div class="contact-actions">
+        <a class="contact-call" href="tel:{{ reporter.phone }}"><i class="fa-solid fa-phone"></i> Call</a>
+        <a class="contact-email" href="mailto:{{ reporter.email }}"><i class="fa-solid fa-envelope"></i> Email</a>
+      </div>
+
+      <a href="{% url 'dashboard:user_detail' reporter.id %}" class="btn-secondary full" style="margin-top:10px">
+        <i class="fa-solid fa-id-card"></i> View Full Profile
+      </a>
+    </div>
+    {% else %}
+    <div class="card">
+      <h3><i class="fa-solid fa-user"></i> Reporter</h3>
+      <p class="muted">Reporter information unavailable.</p>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <h3><i class="fa-solid fa-comment-dots"></i> Add Internal Note</h3>
+      <form method="post" action="{% url 'dashboard:report_action' report.id 'note' %}">
+        {% csrf_token %}
+        <textarea name="note" rows="4" placeholder="Internal note — visible to admins only..."></textarea>
+        <button type="submit" class="btn-primary full"><i class="fa-solid fa-paper-plane"></i> Add Note</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h3><i class="fa-solid fa-timeline"></i> Timeline</h3>
+      {% if timeline %}
+      <ul class="timeline">
+        {% for t in timeline %}
+        <li>
+          <div class="dot"></div>
+          <div>
+            <span class="badge badge-{{ t.status }}">{{ t.status }}</span>
+            <div style="margin-top:4px">{{ t.description }}</div>
+            <small class="muted">{{ t.timestamp|date:"d M Y H:i" }}</small>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No updates yet.</p>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

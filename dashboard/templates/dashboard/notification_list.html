@@ -1,0 +1,70 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Notifications - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Notifications</h2>
+    <p>{{ total }} notification{{ total|pluralize }} shown</p>
+  </div>
+  <a href="{% url 'dashboard:notification_broadcast' %}" class="btn-primary">
+    <i class="fa-solid fa-bullhorn"></i> Send Notification
+  </a>
+</div>
+
+<form class="filter-bar" method="get">
+  <div class="filter-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" name="q" placeholder="Search title, message, user..." value="{{ query }}">
+  </div>
+  <select name="read">
+    <option value="">All</option>
+    <option value="unread" {% if read_filter == 'unread' %}selected{% endif %}>Unread only</option>
+    <option value="read" {% if read_filter == 'read' %}selected{% endif %}>Read only</option>
+  </select>
+  <select name="type">
+    <option value="">All types</option>
+    {% for t in types %}
+    <option value="{{ t }}" {% if type_filter == t %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn-primary">Filter</button>
+  <a href="{% url 'dashboard:notification_list' %}" class="btn-secondary">Reset</a>
+</form>
+
+<div class="card">
+  {% if notifications %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Message</th>
+        <th>User</th>
+        <th>Type</th>
+        <th>Read</th>
+        <th>Created</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for n in notifications %}
+      <tr>
+        <td><strong>{{ n.title }}</strong></td>
+        <td>{{ n.message|truncatechars:60 }}</td>
+        <td><span class="mono">{{ n.user_id }}</span></td>
+        <td><span class="action-tag">{{ n.type }}</span></td>
+        <td>{% if n.read %}✓{% else %}•{% endif %}</td>
+        <td>{{ n.created_at|date:"d M H:i" }}</td>
+        <td><a href="{% url 'dashboard:notification_detail' n.id %}" class="btn-view">Open</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <i class="fa-regular fa-bell"></i>
+    <p>No notifications match your filters.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

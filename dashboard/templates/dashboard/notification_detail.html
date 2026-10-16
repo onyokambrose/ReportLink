@@ -1,0 +1,67 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Notification - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard:home' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back</a>
+    <h2>{{ notification.title }}</h2>
+    <p>
+      <span class="mono">{{ notification.id }}</span>
+      &middot; {{ notification.created_at|date:"d M Y H:i" }}
+      &middot; type: {{ notification.type }}
+    </p>
+  </div>
+  {% if reporter %}
+  <a href="{% url 'dashboard:user_detail' reporter.id %}" class="btn-secondary">
+    <i class="fa-solid fa-user"></i> {{ reporter.full_name }}
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3><i class="fa-solid fa-bell"></i> Notification Content</h3>
+  <p style="font-size:14px;line-height:1.6">{{ notification.message }}</p>
+  {% if notification.report_id %}
+  <div style="margin-top:12px">
+    <a href="{% url 'dashboard:report_detail' notification.report_id %}" class="btn-secondary">
+      <i class="fa-solid fa-file-lines"></i> View Related Report ({{ notification.report_id }})
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3><i class="fa-solid fa-comments"></i> Comment Thread</h3>
+
+  {% if comments %}
+    {% for c in comments %}
+    <div style="display:flex; margin-bottom:14px; {% if c.sender == 'admin' %}justify-content:flex-end;{% endif %}">
+      <div style="max-width:70%; padding:12px 14px; border-radius:12px;
+                  {% if c.sender == 'admin' %}
+                    background: var(--brand-orange); color: white; border-bottom-right-radius:4px;
+                  {% else %}
+                    background:#F1F5F9; color: var(--ink); border-bottom-left-radius:4px;
+                  {% endif %}">
+        <div style="font-size:11px; opacity:0.8; margin-bottom:4px">
+          {% if c.sender == 'admin' %}You (admin){% else %}{% if reporter %}{{ reporter.full_name }}{% else %}User{% endif %}{% endif %}
+          &middot; {{ c.created_at|date:"d M H:i" }}
+        </div>
+        <div>{{ c.body|linebreaksbr }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">No comments yet. Start the conversation below.</p>
+  {% endif %}
+
+  <form method="post" action="{% url 'dashboard:notification_comment_post' notification.id %}" style="margin-top:20px">
+    {% csrf_token %}
+    <label>Reply as admin</label>
+    <textarea name="body" rows="3" placeholder="Type your reply..." required></textarea>
+    <button type="submit" class="btn-primary full">
+      <i class="fa-solid fa-paper-plane"></i> Post Comment
+    </button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Categories - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Categories</h2>
+    <p>{{ total }} categor{{ total|pluralize:"y,ies" }} in the system</p>
+  </div>
+  <a href="{% url 'dashboard:category_create' %}" class="btn-primary">
+    <i class="fa-solid fa-plus"></i> Add Category
+  </a>
+</div>
+
+<div class="card">
+  {% if rows %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Icon</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Reports</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>
+          <span style="display:inline-flex;width:34px;height:34px;border-radius:8px;align-items:center;justify-content:center;background:{{ r.obj.color }}1a;color:{{ r.obj.color }}">
+            <i class="fa-solid {{ r.obj.icon }}"></i>
+          </span>
+        </td>
+        <td><strong>{{ r.obj.name }}</strong></td>
+        <td>{{ r.obj.description|default:"—"|truncatechars:70 }}</td>
+        <td>{{ r.report_count }}</td>
+        <td>
+          {% if r.obj.is_active %}
+            <span class="badge badge-resolved">Active</span>
+          {% else %}
+            <span class="badge badge-rejected">Inactive</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{% url 'dashboard:category_edit' r.obj.id %}" class="btn-view">Edit</a>
+          <form method="post" action="{% url 'dashboard:category_toggle' r.obj.id %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px">
+              {% if r.obj.is_active %}Disable{% else %}Enable{% endif %}
+            </button>
+          </form>
+          <form method="post" action="{% url 'dashboard:category_delete' r.obj.id %}" style="display:inline"
+                onsubmit="return confirm('Delete category {{ r.obj.name|escapejs }}?');">
+            {% csrf_token %}
+            <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;color:#B91C1C">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <i class="fa-regular fa-folder-open"></i>
+    <p>No categories yet. Click <b>Add Category</b> to create one.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

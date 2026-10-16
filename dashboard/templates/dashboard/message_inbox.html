@@ -1,0 +1,52 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Messages - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Messages</h2>
+    <p>Direct conversations with app users</p>
+  </div>
+</div>
+
+<div class="card">
+  {% if conversations %}
+  <table class="table">
+    <thead><tr><th>User</th><th>Last message</th><th>Unread</th><th>When</th><th></th></tr></thead>
+    <tbody>
+    {% for c in conversations %}
+      <tr>
+        <td>
+          <div class="user-cell">
+            <div class="avatar small">{% if c.user %}{{ c.user.full_name|first|upper }}{% else %}?{% endif %}</div>
+            <div>
+              <strong>{% if c.user %}{{ c.user.full_name }}{% else %}{{ c.user_id }}{% endif %}</strong><br>
+              <small class="muted">{% if c.user %}{{ c.user.email }}{% endif %}</small>
+            </div>
+          </div>
+        </td>
+        <td>
+          <span class="muted">{% if c.last_sender == 'admin' %}You: {% endif %}</span>
+          {{ c.last_message|truncatechars:60 }}
+        </td>
+        <td>
+          {% if c.unread > 0 %}
+          <span class="badge badge-pending">{{ c.unread }}</span>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td>{{ c.last_at|date:"d M H:i" }}</td>
+        <td><a href="{% url 'dashboard:message_thread' c.user_id %}" class="btn-view">Open</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <i class="fa-regular fa-comments"></i>
+    <p>No messages yet. When a user messages you from the app, it appears here.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

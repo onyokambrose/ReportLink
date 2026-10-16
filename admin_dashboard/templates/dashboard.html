@@ -1,0 +1,306 @@
+$html = @'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ReportLink Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+  header { background: #E15712; color: white; padding: 14px 22px; display: flex; align-items: center; justify-content: space-between; }
+  header h1 { margin: 0; font-size: 20px; }
+  header a { color: white; text-decoration: none; font-size: 14px; }
+  nav { background: white; border-bottom: 1px solid #ddd; display: flex; padding: 0 22px; }
+  nav button { background: none; border: none; padding: 12px 18px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; }
+  nav button.active { border-bottom-color: #E15712; color: #E15712; font-weight: 600; }
+  main { padding: 22px; max-width: 1400px; margin: 0 auto; }
+  .grid { display: grid; gap: 16px; }
+  .stats { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .card { background: white; border-radius: 10px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .stat-value { font-size: 30px; font-weight: 700; color: #E15712; }
+  .stat-value.danger { color: #c0392b; }
+  .stat-label { font-size: 13px; color: #666; margin-top: 4px; }
+  .critical-card { border-left: 5px solid #c0392b; background: #fff5f5; }
+  .critical-list { display: grid; gap: 10px; margin-top: 12px; }
+  .critical-item { background: white; border: 1px solid #f3c5c5; border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; gap: 12px; }
+  .critical-item h4 { margin: 0 0 4px; }
+  .critical-item small { color: #666; }
+  table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+  th { background: #fafafa; font-weight: 600; }
+  tr:hover { background: #fafafa; }
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+  .chip.pending { background: #fff2e0; color: #b26000; }
+  .chip.resolved { background: #e0f5e0; color: #1f7a1f; }
+  .chip.inProgress { background: #e0eaff; color: #2b4bb2; }
+  .chip.rejected { background: #ffe0e0; color: #b22020; }
+  .chip.assigned { background: #e8e0ff; color: #5b2bb2; }
+  .chip.underReview { background: #e0f0ff; color: #1f5f8a; }
+  button.action { background: #E15712; color: white; border: none; border-radius: 6px; padding: 5px 10px; cursor: pointer; font-size: 12px; }
+  button.action.secondary { background: #eee; color: #333; }
+  button.action.rescue { background: #c0392b; color: white; text-decoration: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; text-align: center; }
+  input, select, textarea { padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px; width: 100%; }
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 10; }
+  .modal-bg.show { display: flex; }
+  .modal { background: white; border-radius: 10px; padding: 22px; width: 580px; max-height: 90vh; overflow-y: auto; }
+  .modal label { display: block; margin: 10px 0 4px; font-size: 13px; font-weight: 600; }
+  .login-wrap { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-card { background: white; padding: 30px; border-radius: 12px; width: 340px; box-shadow: 0 6px 30px rgba(0,0,0,0.1); }
+  .login-card h2 { margin-top: 0; color: #E15712; }
+  .login-card input { margin-bottom: 12px; padding: 10px; }
+  .login-card button { width: 100%; padding: 10px; background: #E15712; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  .error { color: red; font-size: 13px; margin-bottom: 10px; }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  @media (max-width: 900px) { .chart-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+{% if not logged_in %}
+<div class="login-wrap">
+  <div class="login-card">
+    <h2>ReportLink Admin</h2>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <form method="POST">
+      <input name="username" placeholder="Username" required>
+      <input name="password" type="password" placeholder="Password" required>
+      <button type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+{% else %}
+<header><h1>ReportLink Admin Dashboard</h1><a href="/logout">Sign out</a></header>
+<nav>
+  <button class="active" data-tab="overview">Overview</button>
+  <button data-tab="reports">Reports</button>
+  <button data-tab="users">Users</button>
+  <button data-tab="notifications">Notifications</button>
+  <button data-tab="analytics">Analytics</button>
+</nav>
+<main>
+  <section id="tab-overview">
+    <div class="card critical-card" id="criticalCard" style="display:none">
+      <h3 style="margin:0;color:#c0392b">Critical Reports - Action Required</h3>
+      <div class="critical-list" id="criticalList"></div>
+    </div>
+    <div class="grid stats" id="statCards" style="margin-top:16px"></div>
+    <div class="chart-row">
+      <div class="card"><canvas id="chartStatus"></canvas></div>
+      <div class="card"><canvas id="chartCategory"></canvas></div>
+    </div>
+  </section>
+  <section id="tab-reports" style="display:none">
+    <div class="card" style="margin-bottom:12px"><input id="reportSearch" placeholder="Search..."></div>
+    <table><thead><tr><th>ID</th><th>Title</th><th>Reporter</th><th>Category</th><th>Status</th><th>Priority</th><th>Created</th><th></th></tr></thead><tbody id="reportsBody"></tbody></table>
+  </section>
+  <section id="tab-users" style="display:none">
+    <table><thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Email</th><th>Location</th><th>Admin</th><th>Created</th><th></th></tr></thead><tbody id="usersBody"></tbody></table>
+  </section>
+  <section id="tab-notifications" style="display:none">
+    <table><thead><tr><th>ID</th><th>User</th><th>Title</th><th>Message</th><th>Read</th><th>Created</th></tr></thead><tbody id="notifBody"></tbody></table>
+  </section>
+  <section id="tab-analytics" style="display:none">
+    <div class="chart-row">
+      <div class="card"><canvas id="chartDay"></canvas></div>
+      <div class="card"><canvas id="chartPriority"></canvas></div>
+    </div>
+    <div class="card" style="margin-top:16px"><canvas id="chartDistrict"></canvas></div>
+  </section>
+</main>
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3>Respond to Report</h3>
+    <input type="hidden" id="editId">
+    <div style="background:#fafafa;padding:10px;border-radius:8px;margin:10px 0">
+      <div><b>Reporter:</b> <span id="editReporter"></span></div>
+      <div><b>Phone:</b> <a id="editReporterPhone" href="#"></a></div>
+      <div><b>Coordinates:</b> <span id="editCoords"></span></div>
+      <div><b>Location:</b> <span id="editRawLocation"></span></div>
+    </div>
+    <label>Status</label>
+    <select id="editStatus">
+      <option value="pending">Pending</option>
+      <option value="underReview">Under Review</option>
+      <option value="assigned">Assigned</option>
+      <option value="inProgress">In Progress</option>
+      <option value="resolved">Resolved</option>
+      <option value="rejected">Rejected</option>
+    </select>
+    <label>Response / Note (visible to reporter)</label>
+    <textarea id="editNote" rows="3" placeholder="e.g. Ambulance dispatched, ETA 12 minutes."></textarea>
+    <label>Priority</label>
+    <select id="editPriority"><option>Low</option><option>Medium</option><option>High</option><option>Critical</option></select>
+    <label>Title</label><input id="editTitle">
+    <label>Description</label><textarea id="editDescription" rows="4"></textarea>
+    <label>Contact on report</label><input id="editContact">
+    <label>Location Description</label><input id="editLocation">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">
+      <button class="action secondary" onclick="closeModal()">Cancel</button>
+      <button class="action" onclick="saveReport()">Save &amp; Notify Reporter</button>
+    </div>
+  </div>
+</div>
+<script>
+let allReports = [], criticalCache = [], charts = {}, lastCriticalCount = 0, audioCtx = null;
+document.querySelectorAll('nav button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('main > section').forEach(s => s.style.display = 'none');
+    document.getElementById('tab-' + btn.dataset.tab).style.display = 'block';
+    if (btn.dataset.tab === 'analytics') renderAnalytics();
+  });
+});
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  if (r.status === 401 || (r.redirected && r.url.includes('/login'))) { location.href = '/login'; return null; }
+  return r.json();
+}
+function fmt(d) { return d ? d.replace('T', ' ').slice(0, 16) : ''; }
+function chip(s) { return '<span class="chip ' + s + '">' + s + '</span>'; }
+function beep() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 880; g.gain.value = 0.15;
+    o.start(); setTimeout(() => o.stop(), 350);
+  } catch (e) {}
+}
+async function loadAll() {
+  const stats = await api('/api/stats');
+  if (!stats) return;
+  document.getElementById('statCards').innerHTML =
+    '<div class="card"><div class="stat-value">' + stats.users_total + '</div><div class="stat-label">Total Users</div></div>' +
+    '<div class="card"><div class="stat-value">' + stats.reports_total + '</div><div class="stat-label">Total Reports</div></div>' +
+    '<div class="card"><div class="stat-value">' + stats.resolved + '</div><div class="stat-label">Resolved</div></div>' +
+    '<div class="card"><div class="stat-value ' + (stats.critical_open > 0 ? 'danger' : '') + '">' + stats.critical_open + '</div><div class="stat-label">Open Critical</div></div>' +
+    '<div class="card"><div class="stat-value">' + stats.unread + '</div><div class="stat-label">Unread Notifications</div></div>';
+  criticalCache = await api('/api/critical');
+  renderCritical(criticalCache);
+  allReports = await api('/api/reports');
+  renderReports(allReports);
+  renderUsers(await api('/api/users'));
+  renderNotifications(await api('/api/notifications'));
+  renderOverviewCharts(stats);
+  window._stats = stats;
+}
+function renderCritical(list) {
+  const card = document.getElementById('criticalCard'), listEl = document.getElementById('criticalList');
+  if (!list.length) { card.style.display = 'none'; lastCriticalCount = 0; return; }
+  card.style.display = 'block';
+  if (list.length > lastCriticalCount) beep();
+  lastCriticalCount = list.length;
+  listEl.innerHTML = list.map(r => '<div class="critical-item"><div>' +
+    '<h4>' + escapeHtml(r.title) + ' <small>(' + r.id + ')</small></h4>' +
+    '<small>' + escapeHtml(r.category) + ' &rarr; ' + escapeHtml(r.subcategory) + ' | ' + r.priority + ' | ' + r.status + '</small><br>' +
+    '<small><b>Reporter:</b> ' + escapeHtml(r.reporter || '') + ' - ' + escapeHtml(r.reporter_phone || '') + '</small><br>' +
+    '<small><b>Location:</b> ' + escapeHtml(r.location_description || r.manual_area || '') + ' ' + escapeHtml(r.manual_district || '') + '</small>' +
+    '</div><div style="display:flex;flex-direction:column;gap:6px">' +
+    '<a class="action rescue" href="tel:' + escapeHtml(r.reporter_phone || '') + '">Call</a>' +
+    '<button class="action" onclick="editReport(\'' + r.id + '\')">Respond</button></div></div>').join('');
+}
+function renderReports(list) {
+  document.getElementById('reportsBody').innerHTML = list.map(r => '<tr>' +
+    '<td>' + r.id + '</td><td>' + escapeHtml(r.title) + '</td>' +
+    '<td>' + escapeHtml(r.reporter || '') + '<br><small>' + escapeHtml(r.reporter_email || '') + '</small></td>' +
+    '<td>' + escapeHtml(r.category) + '<br><small>' + escapeHtml(r.subcategory) + '</small></td>' +
+    '<td>' + chip(r.status) + '</td><td>' + r.priority + '</td><td>' + fmt(r.created_at) + '</td>' +
+    '<td><button class="action" onclick="editReport(\'' + r.id + '\')">Respond</button> <button class="action secondary" onclick="deleteReport(\'' + r.id + '\')">Delete</button></td></tr>').join('');
+}
+function renderUsers(list) {
+  document.getElementById('usersBody').innerHTML = list.map(u => '<tr>' +
+    '<td>' + u.id + '</td><td>' + escapeHtml(u.full_name) + '</td><td>' + escapeHtml(u.phone) + '</td>' +
+    '<td>' + escapeHtml(u.email) + '</td><td>' + escapeHtml(u.location || '') + '</td>' +
+    '<td>' + (u.is_admin ? 'Yes' : 'No') + '</td><td>' + fmt(u.created_at) + '</td>' +
+    '<td><button class="action secondary" onclick="deleteUser(\'' + u.id + '\')">Delete</button></td></tr>').join('');
+}
+function renderNotifications(list) {
+  document.getElementById('notifBody').innerHTML = list.map(n => '<tr><td>' + n.id + '</td><td>' + n.user_id + '</td>' +
+    '<td>' + escapeHtml(n.title) + '</td><td>' + escapeHtml(n.message) + '</td><td>' + (n.read ? 'yes' : 'no') + '</td><td>' + fmt(n.created_at) + '</td></tr>').join('');
+}
+function renderOverviewCharts(stats) {
+  if (charts.status) charts.status.destroy();
+  charts.status = new Chart(document.getElementById('chartStatus'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(stats.by_status), datasets: [{ data: Object.values(stats.by_status), backgroundColor: ['#E15712','#2FA0E1','#8e44ad','#27ae60','#e74c3c','#95a5a6'] }] },
+    options: { plugins: { title: { display: true, text: 'Reports by Status' } } }
+  });
+  if (charts.category) charts.category.destroy();
+  charts.category = new Chart(document.getElementById('chartCategory'), {
+    type: 'bar',
+    data: { labels: stats.by_category.map(c => c.category), datasets: [{ label: 'Reports', data: stats.by_category.map(c => c.n), backgroundColor: '#2FA0E1' }] },
+    options: { indexAxis: 'y', plugins: { title: { display: true, text: 'Reports by Category' } } }
+  });
+}
+function renderAnalytics() {
+  const s = window._stats; if (!s) return;
+  if (charts.day) charts.day.destroy();
+  charts.day = new Chart(document.getElementById('chartDay'), {
+    type: 'line',
+    data: { labels: s.by_day.map(d => d.day), datasets: [{ label: 'Reports/day', data: s.by_day.map(d => d.n), borderColor: '#E15712', backgroundColor: 'rgba(225,87,18,0.1)', fill: true, tension: 0.3 }] },
+    options: { plugins: { title: { display: true, text: 'Last 30 days' } } }
+  });
+  if (charts.priority) charts.priority.destroy();
+  charts.priority = new Chart(document.getElementById('chartPriority'), {
+    type: 'pie',
+    data: { labels: s.by_priority.map(p => p.priority), datasets: [{ data: s.by_priority.map(p => p.n), backgroundColor: ['#95a5a6','#2FA0E1','#f39c12','#e74c3c'] }] },
+    options: { plugins: { title: { display: true, text: 'By Priority' } } }
+  });
+  if (charts.district) charts.district.destroy();
+  charts.district = new Chart(document.getElementById('chartDistrict'), {
+    type: 'bar',
+    data: { labels: s.by_district.map(d => d.district), datasets: [{ label: 'Reports', data: s.by_district.map(d => d.n), backgroundColor: '#27ae60' }] },
+    options: { plugins: { title: { display: true, text: 'Top districts' } } }
+  });
+}
+document.getElementById('reportSearch').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase();
+  renderReports(allReports.filter(r => (r.id + r.title + (r.reporter || '') + r.category + r.status).toLowerCase().indexOf(q) !== -1));
+});
+function editReport(id) {
+  const r = allReports.find(x => x.id === id) || criticalCache.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('editId').value = r.id;
+  document.getElementById('editReporter').innerText = r.reporter || '(unknown)';
+  const p = document.getElementById('editReporterPhone'); p.innerText = r.reporter_phone || ''; p.href = 'tel:' + (r.reporter_phone || '');
+  document.getElementById('editCoords').innerText = (r.latitude && r.longitude) ? (r.latitude + ', ' + r.longitude) : '-';
+  document.getElementById('editRawLocation').innerText = [r.location_description, r.manual_area, r.manual_district].filter(Boolean).join(', ') || '-';
+  document.getElementById('editStatus').value = r.status;
+  document.getElementById('editPriority').value = r.priority;
+  document.getElementById('editTitle').value = r.title;
+  document.getElementById('editDescription').value = r.description;
+  document.getElementById('editContact').value = r.contact || '';
+  document.getElementById('editLocation').value = r.location_description || '';
+  document.getElementById('editNote').value = '';
+  document.getElementById('modalBg').classList.add('show');
+}
+function closeModal() { document.getElementById('modalBg').classList.remove('show'); }
+async function saveReport() {
+  await api('/api/update_report', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      id: document.getElementById('editId').value,
+      title: document.getElementById('editTitle').value,
+      description: document.getElementById('editDescription').value,
+      priority: document.getElementById('editPriority').value,
+      status: document.getElementById('editStatus').value,
+      contact: document.getElementById('editContact').value,
+      location_description: document.getElementById('editLocation').value,
+      note: document.getElementById('editNote').value,
+    })
+  });
+  closeModal(); loadAll();
+}
+async function deleteReport(id) { if (confirm('Delete report ' + id + '?')) { await api('/api/delete_report/' + id, { method: 'DELETE' }); loadAll(); } }
+async function deleteUser(id) { if (confirm('Delete user ' + id + '?')) { await api('/api/delete_user/' + id, { method: 'DELETE' }); loadAll(); } }
+function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+loadAll();
+setInterval(loadAll, 15000);
+</script>
+{% endif %}
+</body>
+</html>
+'@
+
+Set-Content -Path ".\admin_dashboard\templates\dashboard.html" -Value $html -Encoding UTF8
+Write-Host "Wrote dashboard.html"

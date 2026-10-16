@@ -1,0 +1,40 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Send Notification - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard:notification_list' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Notifications</a>
+    <h2>Send Notification</h2>
+    <p>Broadcast a message to users</p>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="card">
+    <h3><i class="fa-solid fa-bullhorn"></i> Compose</h3>
+
+    <label>Title *</label>
+    <input type="text" name="title" required maxlength="250" placeholder="e.g. Scheduled maintenance">
+
+    <label>Message *</label>
+    <textarea name="message" rows="5" required maxlength="1000" placeholder="Type your message to users..."></textarea>
+
+    <label>Send to</label>
+    <select name="target">
+      <option value="all">All users ({{ user_count }})</option>
+      <option value="regular">Regular users only</option>
+      <option value="admins">Admins only</option>
+    </select>
+  </div>
+
+  <div class="card" style="text-align:right">
+    <a href="{% url 'dashboard:notification_list' %}" class="btn-secondary">Cancel</a>
+    <button type="submit" class="btn-primary">
+      <i class="fa-solid fa-paper-plane"></i> Send Notification
+    </button>
+  </div>
+</form>
+{% endblock %}

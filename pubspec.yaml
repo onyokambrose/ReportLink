@@ -1,0 +1,45 @@
+name: reportlink
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^2.0.0
+  crypto: ^3.0.3
+  geocoding: ^5.0.0
+  geolocator: ^14.0.3
+  image_picker: ^1.0.4
+  shared_preferences: ^2.2.2
+  postgres: ^3.5.15
+  http: ^1.6.0
+  vol_spotter: ^0.2.1
+  url_launcher: ^6.3.3
+  vibration: ^3.2.1
+  flutter_phone_direct_caller: ^2.2.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/ReportLink.png"
+  remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "assets/ReportLink.png"
+    background_color: "#ffffff"
+    theme_color: "#FF7A00"

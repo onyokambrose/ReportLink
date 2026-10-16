@@ -1,0 +1,55 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Settings - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Settings</h2>
+    <p>Application-wide configuration</p>
+  </div>
+</div>
+
+<form method="post" action="{% url 'dashboard:settings_save' %}">
+  {% csrf_token %}
+
+  <div class="card">
+    <h3><i class="fa-solid fa-circle-info"></i> General</h3>
+    <label>Application Name</label>
+    <input type="text" name="app_name" value="{{ settings.app_name }}" maxlength="120">
+
+    <label>Support Email</label>
+    <input type="text" name="support_email" value="{{ settings.support_email }}" maxlength="200">
+
+    <label>Support Phone</label>
+    <input type="text" name="support_phone" value="{{ settings.support_phone }}" maxlength="50">
+
+    <label>Emergency Number (for the volume-button SOS feature)</label>
+    <input type="text" name="emergency_number" value="{{ settings.emergency_number }}" maxlength="40" placeholder="e.g. 0760542556">
+    <p class="muted" style="margin-top:6px;font-size:12px">
+      This is the number the mobile app dials when a user double-presses the Volume Up button.
+    </p>
+  </div>
+
+  <div class="card">
+    <h3><i class="fa-solid fa-toolbox"></i> Maintenance Mode</h3>
+    <p class="muted" style="margin-bottom:12px">
+      When enabled, the mobile app shows a maintenance message instead of the normal interface.
+      Admin accounts still see everything.
+    </p>
+
+    <label style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500">
+      <input type="checkbox" name="maintenance_mode" {% if settings.maintenance_mode %}checked{% endif %} style="width:auto">
+      <span>Enable maintenance mode</span>
+    </label>
+
+    <label style="margin-top:16px">Maintenance Message (shown to app users)</label>
+    <textarea name="maintenance_message" rows="4">{{ settings.maintenance_message }}</textarea>
+  </div>
+
+  <div class="card" style="text-align:right">
+    <a href="{% url 'dashboard:home' %}" class="btn-secondary">Cancel</a>
+    <button type="submit" class="btn-primary"><i class="fa-solid fa-save"></i> Save Settings</button>
+  </div>
+</form>
+{% endblock %}
+

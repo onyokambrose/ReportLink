@@ -1,0 +1,55 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}{% if mode == "create" %}Add Location{% else %}Edit Location{% endif %} - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard:location_list' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Locations</a>
+    <h2>{% if mode == "create" %}Add Location{% else %}Edit Location{% endif %}</h2>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="card">
+    <h3><i class="fa-solid fa-location-dot"></i> Location Details</h3>
+
+    <label>District *</label>
+    <input type="text" name="district" required maxlength="120"
+           value="{% if mode == 'edit' %}{{ loc.district }}{% endif %}">
+
+    <label>City / Town</label>
+    <input type="text" name="city_town" maxlength="120"
+           value="{% if mode == 'edit' %}{{ loc.city_town }}{% endif %}">
+
+    <label>Division</label>
+    <input type="text" name="division" maxlength="120"
+           value="{% if mode == 'edit' %}{{ loc.division }}{% endif %}">
+
+    <label>Area</label>
+    <input type="text" name="area" maxlength="120"
+           value="{% if mode == 'edit' %}{{ loc.area }}{% endif %}">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+      <div>
+        <label>Latitude (optional)</label>
+        <input type="text" name="latitude" placeholder="0.3476"
+               value="{% if mode == 'edit' and loc.latitude %}{{ loc.latitude }}{% endif %}">
+      </div>
+      <div>
+        <label>Longitude (optional)</label>
+        <input type="text" name="longitude" placeholder="32.5825"
+               value="{% if mode == 'edit' and loc.longitude %}{{ loc.longitude }}{% endif %}">
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="text-align:right">
+    <a href="{% url 'dashboard:location_list' %}" class="btn-secondary">Cancel</a>
+    <button type="submit" class="btn-primary">
+      <i class="fa-solid fa-save"></i> {% if mode == "create" %}Create{% else %}Save Changes{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

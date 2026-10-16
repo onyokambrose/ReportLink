@@ -1,0 +1,159 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}ReportLink Admin{% endblock %}</title>
+<link rel="icon" href="{% static 'dashboard/img/logo.png' %}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+</head>
+<body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <img src="{% static 'dashboard/img/logo.png' %}" alt="ReportLink" class="brand-logo">
+    <span>ReportLink</span>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="{% url 'dashboard:home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <i class="fa-solid fa-gauge-high"></i><span>Dashboard</span>
+    </a>
+    <a href="{% url 'dashboard:report_list' %}" class="{% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-file-lines"></i><span>Reports</span>
+    </a>
+    <a href="{% url 'dashboard:user_list' %}" class="{% if 'user' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-users"></i><span>Users</span>
+    </a>
+    <a href="{% url 'dashboard:category_list' %}" class="{% if 'category' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-tags"></i><span>Categories</span>
+    </a>
+    <a href="{% url 'dashboard:location_list' %}" class="{% if 'location' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-location-dot"></i><span>Locations</span>
+    </a>
+    <a href="{% url 'dashboard:message_inbox' %}" class="{% if 'message' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-comments"></i><span>Messages</span>
+    </a>
+    <a href="{% url 'dashboard:notification_list' %}" class="{% if 'notification' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-bell"></i><span>Notifications</span>
+    </a>
+    <a href="{% url 'dashboard:activity_log' %}" class="{% if 'activity' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-clipboard-list"></i><span>Activity Logs</span>
+    </a>
+    <a href="{% url 'dashboard:settings_page' %}" class="{% if 'settings' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-gear"></i><span>Settings</span>
+    </a>
+    <a href="{% url 'dashboard:logout' %}" class="logout">
+      <i class="fa-solid fa-right-from-bracket"></i><span>Logout</span>
+    </a>
+  </nav>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <form class="search" method="get" action="{% url 'dashboard:report_list' %}">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" name="q" placeholder="Search reports..." value="{{ request.GET.q|default:'' }}">
+    </form>
+    <div class="topbar-right">
+      <button id="webpush-btn" class="icon-btn" title="Enable browser notifications" style="border:none;background:none;cursor:pointer;position:relative">
+        <i class="fa-solid fa-bell-slash" id="webpush-icon"></i>
+      </button>
+      <a href="{% url 'dashboard:message_inbox' %}" class="icon-btn" title="Messages"><i class="fa-solid fa-comments"></i></a>
+      <div class="profile">
+        <div class="avatar">{{ request.user.username|first|upper }}</div>
+        <div class="profile-info">
+          <strong>{{ request.user.username }}</strong>
+          <small>Administrator</small>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script>
+// Web Push subscribe/unsubscribe for admins
+(function() {
+  const btn = document.getElementById('webpush-btn');
+  const icon = document.getElementById('webpush-icon');
+  if (!btn || !icon) return;
+
+  const VAPID_PUBLIC = '{{ webpush_public_key|default:"" }}';
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+  }
+
+  async function getExistingSub() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+    const reg = await navigator.serviceWorker.ready;
+    return await reg.pushManager.getSubscription();
+  }
+
+  function setUI(subscribed) {
+    icon.className = subscribed ? 'fa-solid fa-bell' : 'fa-solid fa-bell-slash';
+    btn.title = subscribed ? 'Notifications enabled (click to disable)' : 'Click to enable browser notifications';
+  }
+
+  async function subscribe() {
+    if (!VAPID_PUBLIC) { alert('Server VAPID key missing. Contact admin.'); return; }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { alert('Permission denied.'); return; }
+
+    const reg = await navigator.serviceWorker.register('/static/dashboard/js/service-worker.js');
+    await navigator.serviceWorker.ready;
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+    });
+
+    const csrf = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+
+    await fetch('/admin-dashboard/webpush/subscribe/', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+      body: JSON.stringify(sub),
+    });
+
+    setUI(true);
+  }
+
+  async function unsubscribe() {
+    const sub = await getExistingSub();
+    if (sub) { await sub.unsubscribe(); }
+    setUI(false);
+  }
+
+  btn.addEventListener('click', async () => {
+    const sub = await getExistingSub();
+    if (sub) { await unsubscribe(); } else { await subscribe(); }
+  });
+
+  // Init: show correct icon
+  getExistingSub().then(sub => setUI(!!sub));
+})();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+

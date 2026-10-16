@@ -1,0 +1,50 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Chat with {% if reporter %}{{ reporter.full_name }}{% else %}{{ user_id }}{% endif %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard:message_inbox' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Messages</a>
+    <h2>{% if reporter %}{{ reporter.full_name }}{% else %}{{ user_id }}{% endif %}</h2>
+    {% if reporter %}<p>{{ reporter.email }} · {{ reporter.phone }}</p>{% endif %}
+  </div>
+  {% if reporter %}
+  <div class="contact-actions" style="max-width:280px">
+    <a class="contact-call" href="tel:{{ reporter.phone }}"><i class="fa-solid fa-phone"></i> Call</a>
+    <a class="contact-email" href="mailto:{{ reporter.email }}"><i class="fa-solid fa-envelope"></i> Email</a>
+  </div>
+  {% endif %}
+</div>
+
+<div class="card" style="max-height:60vh; overflow-y:auto">
+  {% if thread %}
+    {% for m in thread %}
+      <div style="display:flex; margin-bottom:14px; {% if m.sender == 'admin' %}justify-content:flex-end;{% endif %}">
+        <div style="max-width:70%; padding:12px 14px; border-radius:12px;
+                    {% if m.sender == 'admin' %}
+                      background: var(--brand-orange); color: white; border-bottom-right-radius:4px;
+                    {% else %}
+                      background:#F1F5F9; color: var(--ink); border-bottom-left-radius:4px;
+                    {% endif %}">
+          <div style="font-size:11px; opacity:0.8; margin-bottom:4px">
+            {% if m.sender == 'admin' %}You{% else %}{% if reporter %}{{ reporter.full_name }}{% else %}User{% endif %}{% endif %}
+            · {{ m.created_at|date:"d M H:i" }}
+          </div>
+          <div>{{ m.body|linebreaksbr }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty"><i class="fa-regular fa-comment"></i><p>No messages yet. Say hi 👋</p></div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <form method="post" action="{% url 'dashboard:message_send' user_id %}">
+    {% csrf_token %}
+    <label>Reply as admin</label>
+    <textarea name="body" rows="3" placeholder="Type your reply..." required></textarea>
+    <button type="submit" class="btn-primary full"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
+  </form>
+</div>
+{% endblock %}

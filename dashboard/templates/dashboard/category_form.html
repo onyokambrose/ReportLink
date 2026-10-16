@@ -1,0 +1,63 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}{% if mode == "create" %}Add Category{% else %}Edit Category{% endif %} - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard:category_list' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Categories</a>
+    <h2>{% if mode == "create" %}Add Category{% else %}Edit Category{% endif %}</h2>
+  </div>
+</div>
+
+{% if error %}
+<div class="card" style="border-left:4px solid #DC2626;background:#FEF2F2">
+  <p style="color:#991B1B;margin:0">{{ error }}</p>
+</div>
+{% endif %}
+
+<form method="post">
+  {% csrf_token %}
+
+  <div class="card">
+    <h3><i class="fa-solid fa-circle-info"></i> Category Details</h3>
+
+    <label>Name *</label>
+    <input type="text" name="name" required maxlength="120"
+           value="{% if mode == 'edit' %}{{ cat.name }}{% else %}{{ form.name|default:'' }}{% endif %}">
+
+    <label>Description</label>
+    <textarea name="description" rows="3" maxlength="500">{% if mode == 'edit' %}{{ cat.description }}{% else %}{{ form.description|default:'' }}{% endif %}</textarea>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px">
+      <div>
+        <label>Icon (Font Awesome class)</label>
+        <input type="text" name="icon" maxlength="60"
+               placeholder="fa-folder, fa-fire, fa-car"
+               value="{% if mode == 'edit' %}{{ cat.icon }}{% else %}{{ form.icon|default:'fa-folder' }}{% endif %}">
+        <p class="muted" style="margin-top:6px;font-size:12px">
+          Browse icons at <a href="https://fontawesome.com/search" target="_blank" style="color:#E15712">fontawesome.com/search</a>
+        </p>
+      </div>
+      <div>
+        <label>Color (hex)</label>
+        <input type="text" name="color" maxlength="20" pattern="#[0-9A-Fa-f]{6}"
+               placeholder="#E15712"
+               value="{% if mode == 'edit' %}{{ cat.color }}{% else %}{{ form.color|default:'#E15712' }}{% endif %}">
+      </div>
+    </div>
+
+    <label style="display:flex;align-items:center;gap:10px;margin-top:16px;font-size:14px">
+      <input type="checkbox" name="is_active" style="width:auto"
+             {% if mode == 'edit' %}{% if cat.is_active %}checked{% endif %}{% else %}{% if form.is_active %}checked{% endif %}{% endif %}>
+      <span>Active (show this category in the app)</span>
+    </label>
+  </div>
+
+  <div class="card" style="text-align:right">
+    <a href="{% url 'dashboard:category_list' %}" class="btn-secondary">Cancel</a>
+    <button type="submit" class="btn-primary">
+      <i class="fa-solid fa-save"></i> {% if mode == "create" %}Create{% else %}Save Changes{% endif %}
+    </button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,68 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Locations - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Locations</h2>
+    <p>{{ total }} location{{ total|pluralize }} in the system</p>
+  </div>
+  <a href="{% url 'dashboard:location_create' %}" class="btn-primary">
+    <i class="fa-solid fa-plus"></i> Add Location
+  </a>
+</div>
+
+<form class="filter-bar" method="get">
+  <div class="filter-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" name="q" placeholder="Search district, town or area..." value="{{ query }}">
+  </div>
+  <button type="submit" class="btn-primary"><i class="fa-solid fa-search"></i> Search</button>
+  <a href="{% url 'dashboard:location_list' %}" class="btn-secondary">Reset</a>
+</form>
+
+<div class="card">
+  {% if locations %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>District</th>
+        <th>City / Town</th>
+        <th>Division</th>
+        <th>Area</th>
+        <th>Coordinates</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for l in locations %}
+      <tr>
+        <td><strong>{{ l.district }}</strong></td>
+        <td>{{ l.city_town|default:"—" }}</td>
+        <td>{{ l.division|default:"—" }}</td>
+        <td>{{ l.area|default:"—" }}</td>
+        <td>
+          {% if l.latitude and l.longitude %}
+            <span class="mono">{{ l.latitude|floatformat:4 }}, {{ l.longitude|floatformat:4 }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>
+          <a href="{% url 'dashboard:location_edit' l.id %}" class="btn-view">Edit</a>
+          <form method="post" action="{% url 'dashboard:location_delete' l.id %}" style="display:inline"
+                onsubmit="return confirm('Delete {{ l.district|escapejs }}?');">
+            {% csrf_token %}
+            <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;color:#B91C1C">Delete</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">
+    <i class="fa-solid fa-location-dot"></i>
+    <p>No locations yet. Click <b>Add Location</b> to create one.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

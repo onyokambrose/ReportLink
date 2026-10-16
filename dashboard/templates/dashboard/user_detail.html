@@ -1,0 +1,50 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}{{ profile.full_name }} - ReportLink Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <a href="{% url 'dashboard:user_list' %}" class="back-link"><i class="fa-solid fa-arrow-left"></i> Back to Users</a>
+    <h2>{{ profile.full_name }}</h2>
+    <p>{{ profile.email }}</p>
+  </div>
+  {% if profile.is_admin %}<span class="badge badge-resolved">Administrator</span>{% endif %}
+</div>
+
+<div class="detail-grid">
+  <div>
+    <div class="card">
+      <h3><i class="fa-solid fa-id-card"></i> Profile</h3>
+      <dl class="detail-list">
+        <dt>Full Name</dt><dd>{{ profile.full_name }}</dd>
+        <dt>Email</dt><dd>{{ profile.email }}</dd>
+        <dt>Phone</dt><dd>{{ profile.phone }}</dd>
+        <dt>Location</dt><dd>{{ profile.location|default:"-" }}</dd>
+        <dt>Profile Info</dt><dd>{{ profile.profile_info|default:"-"|linebreaksbr }}</dd>
+        <dt>Registered</dt><dd>{{ profile.created_at|date:"d M Y, H:i" }}</dd>
+        <dt>Admin</dt><dd>{% if profile.is_admin %}Yes{% else %}No{% endif %}</dd>
+      </dl>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h3><i class="fa-solid fa-file-lines"></i> Submitted Reports ({{ reports|length }})</h3>
+      {% if reports %}
+      <table class="table compact">
+        <thead><tr><th>ID</th><th>Title</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for r in reports %}
+          <tr onclick="window.location='{% url 'dashboard:report_detail' r.id %}'" style="cursor:pointer">
+            <td><span class="mono">{{ r.id }}</span></td>
+            <td>{{ r.title|truncatechars:35 }}</td>
+            <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty"><i class="fa-regular fa-folder"></i><p>No reports submitted.</p></div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

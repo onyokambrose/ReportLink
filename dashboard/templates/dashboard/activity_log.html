@@ -1,0 +1,27 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Activity Log - ReportLink Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h2>Activity Log</h2><p>Audit trail of admin actions</p></div>
+</div>
+<div class="card">
+  {% if logs %}
+  <table class="table">
+    <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Description</th><th>IP</th></tr></thead>
+    <tbody>
+    {% for l in logs %}
+      <tr>
+        <td>{{ l.created_at|date:"d M Y H:i:s" }}</td>
+        <td><strong>{{ l.admin_username }}</strong></td>
+        <td><span class="action-tag">{{ l.action }}</span></td>
+        <td>{{ l.description|default:"-" }}</td>
+        <td class="mono">{{ l.ip_address|default:"-" }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty"><i class="fa-regular fa-clipboard"></i><p>No activity yet.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Dashboard - ReportLink Admin{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h2>Dashboard</h2>
+    <p>Overview of all ReportLink activity</p>
+  </div>
+  <div class="date-chip"><i class="fa-regular fa-calendar"></i> {% now "D, d M Y" %}</div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fa-solid fa-file-lines"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ total_reports }}</div>
+      <div class="stat-label">Total Reports</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon amber"><i class="fa-solid fa-hourglass-half"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ pending }}</div>
+      <div class="stat-label">Pending</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fa-solid fa-spinner"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ in_progress }}</div>
+      <div class="stat-label">In Progress</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fa-solid fa-circle-check"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ resolved }}</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon teal"><i class="fa-solid fa-users"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ users_total }}</div>
+      <div class="stat-label">Registered Users</div>
+    </div>
+  </div>
+  <div class="stat-card critical">
+    <div class="stat-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ critical }}</div>
+      <div class="stat-label">Critical Reports</div>
+    </div>
+  </div>
+</div>
+
+<div class="chart-grid">
+  <div class="card">
+    <h3><i class="fa-solid fa-chart-line"></i> Reports - Last 7 Days</h3>
+    <canvas id="trendChart" height="120"></canvas>
+  </div>
+  <div class="card">
+    <h3><i class="fa-solid fa-chart-pie"></i> By Category</h3>
+    <canvas id="categoryChart" height="120"></canvas>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <div class="card-head">
+      <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Reports</h3>
+      <a href="{% url 'dashboard:report_list' %}" class="btn-link">View All <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    {% if recent_reports %}
+    <table class="table">
+      <thead><tr><th>ID</th><th>Title</th><th>Priority</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for r in recent_reports %}
+        <tr onclick="window.location='{% url 'dashboard:report_detail' r.id %}'" style="cursor:pointer">
+          <td><span class="mono">{{ r.id }}</span></td>
+          <td>{{ r.title|truncatechars:40 }}</td>
+          <td><span class="prio prio-{{ r.priority|lower }}">{{ r.priority }}</span></td>
+          <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty"><i class="fa-regular fa-folder-open"></i><p>No reports yet.</p></div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h3><i class="fa-solid fa-list-check"></i> Recent Activity</h3>
+    {% if recent_activity %}
+    <ul class="timeline">
+      {% for a in recent_activity %}
+      <li>
+        <div class="dot"></div>
+        <div>
+          <strong>{{ a.admin_username }}</strong> - {{ a.action }}
+          <div class="muted">{{ a.description|truncatechars:70 }}</div>
+          <small class="muted">{{ a.created_at|date:"d M Y H:i" }}</small>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty"><i class="fa-regular fa-clock"></i><p>No activity yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+
+{{ last_7|json_script:"trend-data" }}
+{{ by_category|json_script:"category-data" }}
+
+<script>
+  const trendData = JSON.parse(document.getElementById('trend-data').textContent);
+  const categoryData = JSON.parse(document.getElementById('category-data').textContent);
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: trendData.map(d => d.day),
+      datasets: [{
+        label: 'Reports',
+        data: trendData.map(d => d.n),
+        borderColor: '#2563EB',
+        backgroundColor: 'rgba(37,99,235,0.1)',
+        fill: true,
+        tension: 0.35,
+        borderWidth: 2.5,
+        pointRadius: 4,
+        pointBackgroundColor: '#2563EB'
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#F1F5F9' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: categoryData.map(c => c.category),
+      datasets: [{
+        data: categoryData.map(c => c.n),
+        backgroundColor: ['#2563EB','#14B8A6','#F59E0B','#8B5CF6','#EC4899','#10B981','#EF4444','#64748B'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } } },
+      cutout: '65%'
+    }
+  });
+</script>
+{% endblock %}

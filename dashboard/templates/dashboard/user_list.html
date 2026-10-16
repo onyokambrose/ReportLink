@@ -1,0 +1,42 @@
+﻿{% extends "dashboard/base.html" %}
+{% block title %}Users - ReportLink Admin{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h2>Users</h2><p>All registered ReportLink accounts</p></div>
+</div>
+<form class="filter-bar" method="get">
+  <div class="filter-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" name="q" placeholder="Search by name, email or phone..." value="{{ query }}">
+  </div>
+  <button type="submit" class="btn-primary"><i class="fa-solid fa-search"></i> Search</button>
+  <a href="{% url 'dashboard:user_list' %}" class="btn-secondary">Reset</a>
+</form>
+<div class="card">
+  {% if users %}
+  <table class="table">
+    <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Location</th><th>Admin</th><th>Registered</th><th></th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>
+          <div class="user-cell">
+            <div class="avatar small">{{ u.full_name|first|upper }}</div>
+            <strong>{{ u.full_name }}</strong>
+          </div>
+        </td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.phone }}</td>
+        <td>{{ u.location|default:"-"|truncatechars:25 }}</td>
+        <td>{% if u.is_admin %}<span class="badge badge-resolved">Yes</span>{% else %}<span class="muted">No</span>{% endif %}</td>
+        <td>{{ u.created_at|date:"d M Y" }}</td>
+        <td><a href="{% url 'dashboard:user_detail' u.id %}" class="btn-view">View</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty"><i class="fa-regular fa-user"></i><p>No users found.</p></div>
+  {% endif %}
+</div>
+{% endblock %}
