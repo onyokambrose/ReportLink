@@ -1,15 +1,21 @@
 ﻿{
-  "projectSettings": {
-    "framework": "services"
-  },
-  "experimentalServices": {
+  "services": {
     "frontend": {
-      "entrypoint": "frontend/",
-      "routePrefix": "/"
+      "root": "frontend/"
     },
     "backend": {
-      "entrypoint": "backend/",
-      "routePrefix": "/api"
+      "root": "backend/",
+      "entrypoint": "reportlink_backend.wsgi:application"
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
+  ]
 }
