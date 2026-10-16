@@ -1,22 +1,15 @@
 ﻿{
-  "services": {
+  "projectSettings": {
+    "framework": "services"
+  },
+  "experimentalServices": {
     "frontend": {
-      "root": "frontend/",
-      "framework": "flutter"
+      "entrypoint": "frontend/",
+      "routePrefix": "/"
     },
     "backend": {
-      "root": "backend/",
-      "framework": "django"
+      "entrypoint": "backend/",
+      "routePrefix": "/api"
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": { "service": "backend" }
-    },
-    {
-      "source": "/(.*)",
-      "destination": { "service": "frontend" }
-    }
-  ]
+  }
 }
