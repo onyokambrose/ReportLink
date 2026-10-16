@@ -1,14 +1,14 @@
-﻿[services.web]
+[services.frontend]
 root = "frontend/"
 
-[services.api]
+[services.backend]
 root = "backend/"
 entrypoint = "reportlink_backend.wsgi:application"
 
 [[rewrites]]
-source = "/(.*)"
-destination = { service = "web" }
+source = "/api/(.*)"
+destination = { service = "backend" }
 
 [[rewrites]]
-source = "/api/(.*)"
-destination = { service = "api" }
+source = "/(.*)"
+destination = { service = "frontend" }
